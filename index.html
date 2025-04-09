@@ -452,6 +452,8 @@
       }
 
       const hostname = window.location.hostname;
+      console.log("🌐 Hostname détecté :", hostname);
+      
       if (!/^192\.168\./.test(hostname)) {
         console.warn("⚠️ Hors réseau local, scan annulé");
         statusEl.textContent = translations[lang].not_found;
