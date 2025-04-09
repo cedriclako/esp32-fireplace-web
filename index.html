@@ -382,7 +382,10 @@
     }
 
     function fetchPerformanceData() {
-      fetch(getEspUrl('/api/perf'))
+      const url = getEspUrl('/api/perf');
+      if (!url.includes("192.168.")) return; // sécurité si IP inconnue ou externe
+
+      fetch(url)
         .then(res => res.json())
         .then(data => {
           const tbody = document.getElementById('performance-data');
@@ -390,7 +393,8 @@
           for (const key in data) {
             tbody.innerHTML += `<tr><td>${key}</td><td>${data[key]}</td></tr>`;
           }
-        });
+        })
+        .catch(err => console.warn("❌ Données ESP introuvables :", err));
     }
 
     document.addEventListener('DOMContentLoaded', () => {
