@@ -269,7 +269,7 @@
       <div class="control-group control-row">
         <label data-lang="device">Device</label>
         <div class="toggle">
-          <button onclick="autoDetectESP32()" data-lang="auto_connect">🔄 AUTO-CONNECT</button>
+          <button onclick="autoDetectESP32()" data-lang="auto_connect">AUTO-CONNECT</button>
         </div>
       </div>
       <div id="esp-status" style="text-align: center; font-weight: bold; margin-top: 6px;"></div>
@@ -394,7 +394,7 @@
       if (ip && statusEl) {
         statusEl.textContent = `${translations[lang].connected} ${ip}`;
       }
-      
+
       document.querySelectorAll('.lang-btn').forEach(btn => {
         btn.addEventListener('click', () => setLanguage(btn.dataset.lang));
       });
