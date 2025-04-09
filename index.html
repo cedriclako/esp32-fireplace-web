@@ -388,6 +388,13 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       setLanguage(savedLang);
+      const ip = localStorage.getItem("esp_ip");
+      const lang = localStorage.getItem("lang") || "fr";
+      const statusEl = document.getElementById("esp-status");
+      if (ip && statusEl) {
+        statusEl.textContent = `${translations[lang].connected} ${ip}`;
+      }
+      
       document.querySelectorAll('.lang-btn').forEach(btn => {
         btn.addEventListener('click', () => setLanguage(btn.dataset.lang));
       });
