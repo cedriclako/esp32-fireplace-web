@@ -265,6 +265,14 @@
           <button class="unit-btn" data-unit="F">°F</button>
         </div>
       </div>
+
+      <div class="control-group control-row">
+        <label data-lang="device">Device</label>
+        <div class="toggle">
+          <button onclick="autoDetectESP32()" data-lang="auto_connect">🔄 AUTO-CONNECT</button>
+        </div>
+      </div>
+      <div id="esp-status" style="text-align: center; font-weight: bold; margin-top: 6px;"></div>
     </div>
   </div>
 
@@ -294,8 +302,54 @@
 
     // Multilingual support with auto-save to localStorage
     const translations = {
-      en: { tab_home: "Home", tab_performance: "Performance", tab_settings: "Settings", settings: "Settings", language: "Language", temperature_unit: "Temperature Unit", performance: "Performance", field: "Field", value: "Value", title: "Temperature", burn_rate: "Burn rate", controls: "Controls", blower: "Blower", air_distribution: "Air distribution", boost: "Boost", low: "LOW", high: "HIGH" },
-      fr: { tab_home: "Accueil", tab_performance: "Performance", tab_settings: "Paramètres", settings: "Paramètres", language: "Langue", temperature_unit: "Unité température", performance: "Performance", field: "Champ", value: "Valeur", title: "Température", burn_rate: "Taux de combustion", controls: "Contrôles", blower: "Ventilateur", air_distribution: "Distribution d'air", boost: "Boost", low: "BAS", high: "HAUT" }
+      en: {
+        tab_home: "Home",
+        tab_performance: "Performance",
+        tab_settings: "Settings",
+        settings: "Settings",
+        language: "Language",
+        temperature_unit: "Temperature Unit",
+        performance: "Performance",
+        field: "Field",
+        value: "Value",
+        title: "Temperature",
+        burn_rate: "Burn rate",
+        controls: "Controls",
+        blower: "Blower",
+        air_distribution: "Air distribution",
+        boost: "Boost",
+        low: "LOW",
+        high: "HIGH",
+        device: "Device",
+        auto_connect: "AUTO-CONNECT",
+        scanning: "🔍 Scanning...",
+        connected: "✅ Connected to",
+        not_found: "❌ No device found on the network"
+      },
+      fr: {
+        tab_home: "Accueil",
+        tab_performance: "Performance",
+        tab_settings: "Paramètres",
+        settings: "Paramètres",
+        language: "Langue",
+        temperature_unit: "Unité température",
+        performance: "Performance",
+        field: "Champ",
+        value: "Valeur",
+        title: "Température",
+        burn_rate: "Taux de combustion",
+        controls: "Contrôles",
+        blower: "Ventilateur",
+        air_distribution: "Distribution d'air",
+        boost: "Boost",
+        low: "BAS",
+        high: "HAUT",
+        device: "Appareil",
+        auto_connect: "AUTO-CONNEXION",
+        scanning: "🔍 Recherche en cours...",
+        connected: "✅ Connecté à",
+        not_found: "❌ Aucun appareil trouvé sur le réseau"
+      }
     };
 
     let tempUnit = localStorage.getItem('unit') || 'C';
@@ -313,7 +367,7 @@
     }
 
     function sendControlUpdate(key, value) {
-      fetch('/api/controls', {
+      fetch(getEspUrl('/api/controls'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [key]: value })
@@ -321,7 +375,7 @@
     }
 
     function fetchPerformanceData() {
-      fetch('/api/perf')
+      fetch(getEspUrl('/api/perf'))
         .then(res => res.json())
         .then(data => {
           const tbody = document.getElementById('performance-data');
@@ -367,6 +421,36 @@
       fetchPerformanceData();
       setInterval(fetchPerformanceData, 2000);
     });
+
+    function getEspUrl(path) {
+      const ip = localStorage.getItem("esp_ip") || window.location.hostname;
+      return `http://${ip}${path}`;
+    }
+
+    async function autoDetectESP32() {
+      const base = window.location.hostname.split('.').slice(0, 3).join('.');
+      const statusEl = document.getElementById("esp-status");
+      const lang = localStorage.getItem('lang') || 'fr';
+
+      statusEl.textContent = translations[lang].scanning;
+
+      for (let i = 2; i < 255; i++) {
+        const ip = `${base}.${i}`;
+        try {
+          const res = await fetch(`http://${ip}/api/perf`, { method: 'GET' });
+          const data = await res.json();
+          if (data && data.Tbaffle !== undefined) {
+            localStorage.setItem("esp_ip", ip);
+            statusEl.textContent = `${translations[lang].connected} ${ip}`;
+            return;
+          }
+        } catch (e) {
+          // silence
+        }
+      }
+      statusEl.textContent = translations[lang].not_found;
+    }
+
 
     let deferredPrompt = null;
 
