@@ -2,7 +2,7 @@
   "name": "Fireplace Control",
   "short_name": "Fireplace",
   "description": "Contrôle intelligent du poêle à bois",
-  "start_url": "/setup.html",
+  "start_url": "/index.html",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
