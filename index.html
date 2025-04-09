@@ -441,36 +441,56 @@
     });
 
     async function autoDetectESP32() {
-      const base = window.location.hostname.split('.').slice(0, 3).join('.');
       const statusEl = document.getElementById("esp-status");
       const lang = localStorage.getItem('lang') || 'fr';
 
+      const savedIp = localStorage.getItem("esp_ip");
+      if (savedIp && /^192\.168\./.test(savedIp)) {
+        console.log(`💾 IP déjà sauvegardée : ${savedIp}`);
+        statusEl.textContent = `${translations[lang].connected} ${savedIp}`;
+        return;
+      }
+
+      const hostname = window.location.hostname;
+      if (!/^192\.168\./.test(hostname)) {
+        console.warn("⚠️ Hors réseau local, scan annulé");
+        statusEl.textContent = translations[lang].not_found;
+        return;
+      }
+
+      const base = hostname.split('.').slice(0, 3).join('.');
+      console.log(`🔍 Scan des IP de ${base}.2 à ${base}.254`);
       statusEl.textContent = translations[lang].scanning;
 
       for (let i = 2; i < 255; i++) {
         const ip = `${base}.${i}`;
-        const url = `http://${ip}/api/perf`; // 👈 toujours HTTP pour IP locale
+        const url = `http://${ip}/api/perf`;
+        console.log(`🌐 Test de ${url}`);
 
         try {
           const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 800); // ⏳ timeout rapide
+          const timeout = setTimeout(() => controller.abort(), 800);
           const res = await fetch(url, { signal: controller.signal });
-
           clearTimeout(timeout);
 
           const data = await res.json();
           if (data && data.Tbaffle !== undefined) {
+            console.log(`✅ Appareil trouvé à ${ip}`);
             localStorage.setItem("esp_ip", ip);
             statusEl.textContent = `${translations[lang].connected} ${ip}`;
             return;
+          } else {
+            console.log(`⚠️ ${ip} a répondu mais sans données attendues`);
           }
         } catch (e) {
-          // Erreur ignorée (timeout ou fetch échoué)
+          console.log(`❌ ${ip} : ${e.name}`);
         }
       }
 
+      console.warn("❌ Aucun ESP32 trouvé");
       statusEl.textContent = translations[lang].not_found;
     }
+
 
     let deferredPrompt = null;
 
