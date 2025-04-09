@@ -366,6 +366,13 @@
       });
     }
 
+    function getEspUrl(path) {
+      const ip = localStorage.getItem("esp_ip") || window.location.hostname;
+      const isLocal = /^192\.168\./.test(ip);
+      const protocol = isLocal ? "http" : "https";
+      return `${protocol}://${ip}${path}`;
+    }
+
     function sendControlUpdate(key, value) {
       fetch(getEspUrl('/api/controls'), {
         method: 'POST',
@@ -429,11 +436,6 @@
       setInterval(fetchPerformanceData, 2000);
     });
 
-    function getEspUrl(path) {
-      const ip = localStorage.getItem("esp_ip") || window.location.hostname;
-      return `http://${ip}${path}`;
-    }
-
     async function autoDetectESP32() {
       const base = window.location.hostname.split('.').slice(0, 3).join('.');
       const statusEl = document.getElementById("esp-status");
@@ -443,8 +445,15 @@
 
       for (let i = 2; i < 255; i++) {
         const ip = `${base}.${i}`;
+        const url = `http://${ip}/api/perf`; // 👈 toujours HTTP pour IP locale
+
         try {
-          const res = await fetch(`http://${ip}/api/perf`, { method: 'GET' });
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 800); // ⏳ timeout rapide
+          const res = await fetch(url, { signal: controller.signal });
+
+          clearTimeout(timeout);
+
           const data = await res.json();
           if (data && data.Tbaffle !== undefined) {
             localStorage.setItem("esp_ip", ip);
@@ -452,12 +461,12 @@
             return;
           }
         } catch (e) {
-          // silence
+          // Erreur ignorée (timeout ou fetch échoué)
         }
       }
+
       statusEl.textContent = translations[lang].not_found;
     }
-
 
     let deferredPrompt = null;
 
