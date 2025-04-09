@@ -367,23 +367,28 @@
     }
 
     function getEspUrl(path) {
-      const ip = localStorage.getItem("esp_ip") || window.location.hostname;
-      const isLocal = /^192\.168\./.test(ip);
-      const protocol = isLocal ? "http" : "https";
-      return `${protocol}://${ip}${path}`;
+      const ip = localStorage.getItem("esp_ip");
+      if (!ip || !/^192\.168\./.test(ip)) {
+        console.warn("⚠️ Aucune IP locale valide trouvée");
+        return null;
+      }
+      return `http://${ip}${path}`;
     }
 
     function sendControlUpdate(key, value) {
-      fetch(getEspUrl('/api/controls'), {
+      const url = getEspUrl('/api/controls');
+      if (!url) return;
+
+      fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ [key]: value })
-      });
+      }).catch(err => console.warn("❌ Envoi de commande échoué :", err));
     }
 
     function fetchPerformanceData() {
       const url = getEspUrl('/api/perf');
-      if (!url.includes("192.168.")) return; // sécurité si IP inconnue ou externe
+      if (!url) return;
 
       fetch(url)
         .then(res => res.json())
