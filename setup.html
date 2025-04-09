@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Wi-Fi Setup</title>
+
+  <!-- PWA Essentials -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#5A1619" />
+  <link rel="icon" href="/icon_stove.png" />
+  <link rel="apple-touch-icon" href="/icon_stove.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+
+  <style>
+    body {
+      font-family: "Poppins", sans-serif;
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-image: url('/self_regulated_bg.jpg');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      max-width: 320px;
+      width: 90%;
+      position: absolute;
+      top: 10%;
+      z-index: 2;
+    }
+
+    form {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      max-width: 320px;
+      width: 90%;
+      z-index: 2;
+    }
+
+    h2 {
+      margin-bottom: 1rem;
+      color: #5A1619;
+      text-align: center;
+    }
+
+    select, input, button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    button {
+      background-color: #5A1619;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #2C0707;
+    }
+
+    #status {
+      margin-top: 1rem;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    #status.ok { color: green; }
+    #status.error { color: red; }
+
+    #overlaySpinner {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.8);
+      z-index: 10;
+      font-size: 1.2rem;
+      font-weight: bold;
+      text-align: center;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .logo {
+      position: absolute;
+      bottom: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 140px;
+      opacity: 0.9;
+      z-index: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="wifiForm">
+    <h2>Configuration Wi-Fi</h2>
+    <button type="button" id="scanBtn">🔄 Scanner les réseaux</button>
+    <select name="ssid" id="ssid" required>
+      <option disabled selected value="">🔍 Cliquez sur Scan pour rechercher</option>
+    </select>
+    <div style="position: relative; width: 100%;">
+      <input type="password" name="password" id="password" placeholder="Mot de passe" autocomplete="new-password" 
+             style="width: 100%; padding-right: 40px; box-sizing: border-box;" />
+      <span id="togglePassword" 
+            style="position: absolute; top: 50%; right: 12px; transform: translateY(-50%); cursor: pointer; user-select: none;"
+            title="Afficher / Masquer">👁️</span>
+    </div>       
+    <button type="button" id="submitBtn">Se connecter</button>
+    <p id="status"></p>
+    <button type="button" id="fallbackBtn" style="display:none; margin-top:10px; background-color: #bbb;">🔁 Revenir au mode AP</button>
+  </div>
+  <div id="overlaySpinner" style="display: none; align-items: center; justify-content: center;">
+    ⏳ Veuillez patienter...
+  </div>
+  
+  <img src="/icon_valcourt.png" alt="Logo Valcourt" class="logo" />
+
+  <script>
+    const overlaySpinner = document.getElementById("overlaySpinner");
+    const fallbackBtn = document.getElementById("fallbackBtn");
+
+    async function scanNetworks() {
+      overlaySpinner.style.display = "flex";
+      const select = document.getElementById('ssid');
+      try {
+        const res = await fetch('/api/scan');
+        const data = await res.json();
+        select.innerHTML = '';
+        data.forEach(ap => {
+          const opt = document.createElement('option');
+          opt.value = ap.ssid;
+          let icon = ap.rssi > -60 ? '🟢' : ap.rssi > -70 ? '🟡' : '🔴';
+          opt.textContent = `${icon} ${ap.ssid} (${ap.rssi} dBm)`;
+          select.appendChild(opt);
+        });
+      } catch (e) {
+        select.innerHTML = '<option disabled>❌ Échec du scan</option>';
+      } finally {
+        overlaySpinner.style.display = "none";
+      }
+    }
+
+    document.getElementById("scanBtn").addEventListener("click", scanNetworks);
+
+    fallbackBtn.addEventListener("click", async () => {
+      overlaySpinner.style.display = "flex";
+      await fetch("/api/fallback-ap");
+      setTimeout(() => {
+        overlaySpinner.style.display = "none";
+        location.reload();
+      }, 2000);
+    });
+
+    document.getElementById("submitBtn").addEventListener("click", async () => {
+      const container = document.querySelector(".container");
+      const ssid = container.querySelector("#ssid").value;
+      const password = container.querySelector("#password").value;
+      const status = document.getElementById("status");
+      const submitBtn = document.getElementById("submitBtn");
+
+      if (!ssid || !password) {
+        status.textContent = "❗ SSID ou mot de passe manquant.";
+        status.className = "error";
+        return;
+      }
+
+      status.textContent = "";
+      status.className = "";
+      submitBtn.disabled = true;
+      overlaySpinner.style.display = "flex";
+
+      await fetch("/save-wifi", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ssid, password })
+      });
+
+      let attempts = 30;
+      let connected = false;
+      while (attempts-- > 0) {
+        const res = await fetch("/api/check-connection");
+        if (await res.text() === "OK") {
+          connected = true;
+          break;
+        }
+        await new Promise(r => setTimeout(r, 1000));
+      }
+
+      overlaySpinner.style.display = "none";
+      submitBtn.disabled = false;
+
+      if (connected) {
+        let ip = "0.0.0.0";
+        for (let i = 0; i < 10 && ip === "0.0.0.0"; i++) {
+          const ipRes = await fetch("/api/ip");
+          ip = await ipRes.text();
+          await new Promise(r => setTimeout(r, 500));
+        }
+
+        status.textContent = `✅ Connecté avec succès ! IP: ${ip}`;
+        status.className = "ok";
+        /*
+        setTimeout(() => {
+          alert(`✅ Connexion réussie !\nIP locale : ${ip}`);
+          window.location.href = "/index.html";
+        }, 500);*/
+        // 🔁 Redémarre après 5 secondes
+        /*setTimeout(async () => {
+          try {
+            await fetch("/api/reboot");
+          } catch (e) {
+            console.error("❌ Erreur requête de redémarrage", e);
+          }
+        }, 5000);*/
+      } else {
+        status.textContent = "❌ Échec de connexion.";
+        status.className = "error";
+        fallbackBtn.style.display = "block";
+        setTimeout(() => {
+          alert("❌ Échec de la connexion au Wi-Fi.\nVeuillez vérifier le mot de passe ou réessayer.");
+        }, 100);
+      }
+    });
+
+    document.getElementById("togglePassword").addEventListener("click", function () {
+      const pwdInput = document.getElementById("password");
+      const isHidden = pwdInput.type === "password";
+      pwdInput.type = isHidden ? "text" : "password";
+      this.textContent = isHidden ? "🙈" : "👁️";
+    });
+
+    let deferredPrompt = null;
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      alert("📲 Installation disponible !");
+      e.preventDefault();
+      deferredPrompt = e;
+
+      const installBtn = document.createElement("button");
+      installBtn.textContent = "📲 Installer l'application";
+      installBtn.style.position = "fixed";
+      installBtn.style.bottom = "20px";
+      installBtn.style.left = "50%";
+      installBtn.style.transform = "translateX(-50%)";
+      installBtn.style.padding = "14px 24px";
+      installBtn.style.background = "#5A1619";
+      installBtn.style.color = "white";
+      installBtn.style.fontWeight = "bold";
+      installBtn.style.border = "none";
+      installBtn.style.borderRadius = "8px";
+      installBtn.style.zIndex = "1000";
+      installBtn.style.boxShadow = "0px 4px 10px rgba(0,0,0,0.3)";
+      installBtn.style.cursor = "pointer";
+      document.body.appendChild(installBtn);
+
+      installBtn.addEventListener("click", async () => {
+        alert("🛠️ Lancement de l'installation…");
+        installBtn.style.display = "none";
+
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          const result = await deferredPrompt.userChoice;
+
+          if (result.outcome === "accepted") {
+            console.log("✅ Application installée !");
+            
+            // 🔁 Redémarre après 5 secondes
+            setTimeout(async () => {
+              try {
+                await fetch("/api/reboot");
+              } catch (e) {
+                console.error("❌ Erreur requête de redémarrage", e);
+              }
+            }, 5000);
+
+          } else {
+            console.log("❌ Installation refusée.");
+          }
+
+          deferredPrompt = null;
+        }
+      });
+
+    });
+
+    // 📦 Enregistrement automatique du Service Worker
+    window.addEventListener('load', () => {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(reg => {
+            console.log("✅ Service Worker enregistré :", reg);
+          })
+          .catch(err => {
+            console.error("❌ Erreur Service Worker:", err);
+          });
+      } else {
+        console.warn("❌ navigator.serviceWorker non disponible dans cet environnement");
+      }
+    });
+
+  </script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+{
+  "name": "Fireplace Control",
+  "short_name": "Fireplace",
+  "description": "Contrôle intelligent du poêle à bois",
+  "start_url": "/setup.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#5A1619",
+  "icons": [
+    {
+      "src": "/icon_stove.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot_mobile.png",
+      "sizes": "320x560",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/screenshot_wide.png",
+      "sizes": "1024x550",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ]
+}

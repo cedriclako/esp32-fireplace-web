@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Fireplace Control</title>
+
+  <!-- PWA & Meta -->
+  <meta name="theme-color" content="#5A1619" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Fireplace" />
+
+  <!-- Icones -->
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon_stove.png" />
+  <link rel="apple-touch-icon" href="/icon_stove.png" />
+
+  <!-- Service Worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+          .then(reg => console.log('✅ Service Worker enregistré', reg.scope))
+          .catch(err => console.error('❌ Échec Service Worker', err));
+      });
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: "Poppins", sans-serif;
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-image: url('/self_regulated_bg.jpg');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      width: 90%;
+      max-width: 400px;
+      position: absolute;
+      top: 10%;
+    }
+
+    nav {
+      display: flex;
+      border-bottom: 1px solid #DCDDDE;
+    }
+
+    .tab {
+      position: relative;
+      flex: 1;
+      background: white;
+      color: black;
+      border: none;
+      cursor: pointer;
+      font-weight: 500;
+      border-right: 1px solid #DCDDDE;
+      height: 42px;
+      padding: 10px 0;
+    }
+
+    .tab:last-child {
+      border-right: none;
+    }
+
+    .tab.active {
+      background: #5A1619;
+      color: white;
+      font-weight: bold;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tab.active::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 6px;
+      width: 100%;
+      background: #2C0707;
+    }
+
+    .content {
+      display: none;
+    }
+
+    .content:not(.hidden) {
+      display: block;
+    }
+
+    .section-title {
+      margin: 20px 0 10px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .control-group {
+      margin-bottom: 15px;
+    }
+
+    .control-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .control-group label {
+      font-weight: 500;
+      font-size: 15px;
+    }
+
+    .toggle {
+      display: flex;
+      gap: 6px;
+    }
+
+    .toggle button {
+      min-width: 50px;
+      padding: 5px 10px;
+      border: none;
+      border-radius: 6px;
+      background: #e6e6e6;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .toggle button.active {
+      background: #800000;
+      color: white;
+    }
+
+    .divider {
+      height: 1px;
+      background-color: #00000029;
+      box-shadow: 0px 3pt 6pt rgba(0, 0, 0, 0.15);
+      margin: 20px 0;
+    }
+
+    .performance-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    .performance-table th,
+    .performance-table td {
+      border: 1px solid grey;
+      padding: 8px;
+      text-align: center;
+    }
+
+    .performance-table th {
+      background: #f5f5f5;
+    }
+
+    .logo {
+      position: absolute;
+      bottom: 15px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 140px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <nav>
+      <button class="tab active" data-tab="home" data-lang="tab_home">Home</button>
+      <button class="tab" data-tab="performance" data-lang="tab_performance">Performance</button>
+      <button class="tab" data-tab="settings" data-lang="tab_settings">Settings</button>
+    </nav>
+
+    <div class="content" id="home">
+      <div class="section-title" data-lang="title">Temperature</div>
+      <div class="control-group control-row">
+        <label data-key="burnRate" data-lang="burn_rate">Burn rate</label>
+        <div class="toggle">
+          <button class="burn-btn active" data-lang="low">LOW</button>
+          <button class="burn-btn" data-lang="high">HIGH</button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section-title" data-lang="controls">Controls</div>
+
+      <div class="control-group control-row">
+        <label data-key="blower" data-lang="blower">Blower</label>
+        <div class="toggle">
+          <button>OFF</button>
+          <button>MIN</button>
+          <button>MAX</button>
+          <button class="active">AUTO</button>
+        </div>
+      </div>
+
+      <div class="control-group control-row">
+        <label data-key="airDistribution" data-lang="air_distribution">Air distribution</label>
+        <div class="toggle">
+          <button>OFF</button>
+          <button>MIN</button>
+          <button>MAX</button>
+          <button class="active">AUTO</button>
+        </div>
+      </div>
+
+      <div class="control-group control-row">
+        <label data-key="boost" data-lang="boost">Boost</label>
+        <div class="toggle">
+          <button>ON</button>
+          <button class="active">OFF</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="content hidden" id="performance">
+      <!-- <div class="section-title" data-lang="performance">Performance</div> -->
+
+      <img src="/icon_performance.png" alt="Performance Icon"
+             style="width: 96px; height: 96px; margin-right: 8px; object-fit: contain;" />
+      <div class="section-title" data-lang="performance" style="display: flex; align-items: center;">
+        <span>Performance</span>
+      </div>      
+      <table class="performance-table">
+        <thead>
+          <tr>
+            <th data-lang="field">Field</th>
+            <th data-lang="value">Value</th>
+          </tr>
+        </thead>
+        <tbody id="performance-data">
+          <!-- Injected dynamically -->
+        </tbody>
+      </table>
+    </div>
+
+    <div class="content hidden" id="settings">
+      <div class="section-title" data-lang="settings">Settings</div>
+
+      <div class="control-group control-row">
+        <label data-lang="language">Language</label>
+        <div class="toggle lang-toggle">
+          <button class="lang-btn active" data-lang="en">EN</button>
+          <button class="lang-btn" data-lang="fr">FR</button>
+        </div>
+      </div>
+
+      <div class="control-group control-row">
+        <label data-lang="temperature_unit">Temperature Unit</label>
+        <div class="toggle unit-toggle">
+          <button class="unit-btn active" data-unit="C">°C</button>
+          <button class="unit-btn" data-unit="F">°F</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <img src="/icon_valcourt.png" alt="Logo Valcourt" class="logo" />
+
+  <script>
+    // Tab switching
+    document.querySelectorAll('.tab').forEach(button => {
+      button.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+        button.classList.add('active');
+
+        document.querySelectorAll('.content').forEach(content => content.classList.add('hidden'));
+        document.getElementById(button.dataset.tab).classList.remove('hidden');
+      });
+    });
+
+    // Generic toggle button logic
+    document.querySelectorAll('.toggle').forEach(group => {
+      group.addEventListener('click', e => {
+        if (e.target.tagName === 'BUTTON') {
+          group.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+          e.target.classList.add('active');
+        }
+      });
+    });
+
+    // Multilingual support with auto-save to localStorage
+    const translations = {
+      en: { tab_home: "Home", tab_performance: "Performance", tab_settings: "Settings", settings: "Settings", language: "Language", temperature_unit: "Temperature Unit", performance: "Performance", field: "Field", value: "Value", title: "Temperature", burn_rate: "Burn rate", controls: "Controls", blower: "Blower", air_distribution: "Air distribution", boost: "Boost", low: "LOW", high: "HIGH" },
+      fr: { tab_home: "Accueil", tab_performance: "Performance", tab_settings: "Paramètres", settings: "Paramètres", language: "Langue", temperature_unit: "Unité température", performance: "Performance", field: "Champ", value: "Valeur", title: "Température", burn_rate: "Taux de combustion", controls: "Contrôles", blower: "Ventilateur", air_distribution: "Distribution d'air", boost: "Boost", low: "BAS", high: "HAUT" }
+    };
+
+    let tempUnit = localStorage.getItem('unit') || 'C';
+    const savedLang = localStorage.getItem('lang') || 'fr';
+
+    function setLanguage(lang) {
+      localStorage.setItem('lang', lang);
+      document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.lang === lang);
+      });
+      document.querySelectorAll('[data-lang]').forEach(el => {
+        const key = el.getAttribute('data-lang');
+        el.textContent = translations[lang][key] || el.textContent;
+      });
+    }
+
+    function sendControlUpdate(key, value) {
+      fetch('/api/controls', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [key]: value })
+      });
+    }
+
+    function fetchPerformanceData() {
+      fetch('/api/perf')
+        .then(res => res.json())
+        .then(data => {
+          const tbody = document.getElementById('performance-data');
+          tbody.innerHTML = '';
+          for (const key in data) {
+            tbody.innerHTML += `<tr><td>${key}</td><td>${data[key]}</td></tr>`;
+          }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      setLanguage(savedLang);
+      document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.addEventListener('click', () => setLanguage(btn.dataset.lang));
+      });
+      document.querySelectorAll('.unit-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          tempUnit = btn.dataset.unit;
+          localStorage.setItem('unit', tempUnit);
+          document.querySelectorAll('.unit-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+        });
+      });
+      document.querySelectorAll('.tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+          btn.classList.add('active');
+          document.querySelectorAll('.content').forEach(c => c.classList.add('hidden'));
+          document.getElementById(btn.dataset.tab).classList.remove('hidden');
+        });
+      });
+      document.querySelectorAll('.toggle').forEach(group => {
+        group.addEventListener('click', e => {
+          if (e.target.tagName === 'BUTTON') {
+            group.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            const label = group.closest('.control-group')?.querySelector('label');
+            const key = label?.dataset.key;
+            if (key) sendControlUpdate(key, e.target.textContent);
+          }
+        });
+      });
+      fetchPerformanceData();
+      setInterval(fetchPerformanceData, 2000);
+    });
+
+    let deferredPrompt = null;
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+
+      const installBtn = document.createElement("button");
+      installBtn.textContent = "📲 Installer l'application";
+      installBtn.style.position = "fixed";
+      installBtn.style.bottom = "20px";
+      installBtn.style.left = "50%";
+      installBtn.style.transform = "translateX(-50%)";
+      installBtn.style.padding = "14px 24px";
+      installBtn.style.background = "#5A1619";
+      installBtn.style.color = "white";
+      installBtn.style.fontWeight = "bold";
+      installBtn.style.border = "none";
+      installBtn.style.borderRadius = "8px";
+      installBtn.style.zIndex = "1000";
+      installBtn.style.boxShadow = "0px 4px 10px rgba(0,0,0,0.3)";
+      installBtn.style.cursor = "pointer";
+      document.body.appendChild(installBtn);
+
+      installBtn.addEventListener("click", async () => {
+        installBtn.style.display = "none";
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          const result = await deferredPrompt.userChoice;
+          if (result.outcome === "accepted") {
+            console.log("✅ Application installée !");
+          } else {
+            console.log("❌ Installation refusée.");
+          }
+          deferredPrompt = null;
+        }
+      });
+    });
+  </script>
+</body>
+</html>
