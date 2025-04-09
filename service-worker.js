@@ -3,7 +3,6 @@ const CACHE_NAME = "fireplace-cache-v1";
 const FILES_TO_CACHE = [
   "/",
   "/index.html",
-  "/setup.html",
   "/manifest.json",
   "/icon_stove.png",
   "/self_regulated_bg.jpg",
