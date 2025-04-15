@@ -449,13 +449,6 @@
       const statusEl = document.getElementById("esp-status");
       const lang = localStorage.getItem('lang') || 'fr';
 
-      // 🔧 IP statique pour test
-      const forcedTestIp = "192.168.2.93";
-      localStorage.setItem("esp_ip", forcedTestIp);
-      console.log(`🧪 IP de test forcée : ${forcedTestIp}`);
-      statusEl.textContent = `${translations[lang].connected} ${forcedTestIp}`;
-      return;
-/*
       const savedIp = localStorage.getItem("esp_ip");
       if (savedIp && /^192\.168\./.test(savedIp)) {
         console.log(`💾 IP déjà sauvegardée : ${savedIp}`);
@@ -503,7 +496,7 @@
 
       console.warn("❌ Aucun ESP32 trouvé");
       statusEl.textContent = translations[lang].not_found;
-      */
+      
     }
 
 
